@@ -4,15 +4,10 @@ import { useState } from "react";
 import { Navbar } from "@/components/home/navbar";
 import { PromptInput } from "@/components/home/prompt-input";
 import { PromptTemplates } from "@/components/home/prompt-templates";
+import { ProjectGrid } from "@/features/projects/components/project-grid";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
-
-  function handleSubmit(value: string) {
-    // TODO: wire this up to your generation pipeline / route to a
-    // build page. For now this just logs what was sent.
-    console.log("Building:", value);
-  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -33,10 +28,10 @@ export default function Home() {
           <PromptInput
             value={prompt}
             onChange={setPrompt}
-            onSubmit={handleSubmit}
           />
 
           <PromptTemplates onSelect={setPrompt} />
+          <ProjectGrid />
         </div>
       </main>
     </div>

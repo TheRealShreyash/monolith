@@ -1,17 +1,21 @@
 "use client";
 
-import { useRef, type ChangeEvent, type KeyboardEvent } from "react";
+import { useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { ArrowUp, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCreateProject } from "@/features/projects/hooks/projects";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface PromptInputProps {
   value: string;
   onChange: (value: string) => void;
-  onSubmit: (value: string) => void;
 }
 
-export function PromptInput({ value, onChange, onSubmit }: PromptInputProps) {
+export function PromptInput({ value, onChange }: PromptInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { mutate: createProject, isPending } = useCreateProject();
+  const router = useRouter();
 
   function handleInput(e: ChangeEvent<HTMLTextAreaElement>) {
     onChange(e.target.value);
@@ -31,7 +35,14 @@ export function PromptInput({ value, onChange, onSubmit }: PromptInputProps) {
       e.preventDefault();
       const trimmed = value.trim();
       if (trimmed.length > 0) {
-        onSubmit(trimmed);
+        createProject(value, {
+          onSuccess: (project) => {
+            router.push(`/projects/${project.id}`);
+          },
+          onError: (error) => {
+            toast.error(error.message);
+          },
+        });
       }
     }
   }
@@ -39,7 +50,14 @@ export function PromptInput({ value, onChange, onSubmit }: PromptInputProps) {
   function handleSubmitClick() {
     const trimmed = value.trim();
     if (trimmed.length > 0) {
-      onSubmit(trimmed);
+      createProject(value, {
+        onSuccess: (project) => {
+          router.push(`/projects/${project.id}`);
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      });
     }
   }
 

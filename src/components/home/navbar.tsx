@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ModeToggle } from "../ui/mode-toggle";
 import { Button } from "@/components/ui/button";
+import { UserButton } from "@clerk/nextjs";
 
 // Logo glyph: a tall slab with a glowing seam near the base —
 // the same motif echoed in the prompt input below.
@@ -58,6 +59,7 @@ export function Navbar() {
             Sign in
           </Button>
           <Button size="sm">Get started</Button>
+          <UserButton />
         </div>
       </div>
     </header>
