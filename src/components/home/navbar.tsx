@@ -1,7 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { ModeToggle } from "../ui/mode-toggle";
 import { Button } from "@/components/ui/button";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 
 // Logo glyph: a tall slab with a glowing seam near the base —
 // the same motif echoed in the prompt input below.
@@ -28,6 +30,11 @@ function MonolithMark() {
 }
 
 export function Navbar() {
+  // useAuth() requires "use client" — it reads Clerk's session state on
+  // the client. isLoaded prevents a flash where buttons briefly appear
+  // before Clerk has hydrated.
+  const { isSignedIn, isLoaded } = useAuth();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
@@ -55,11 +62,30 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <ModeToggle />
-          <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
-            Sign in
-          </Button>
-          <Button size="sm">Get started</Button>
-          <UserButton />
+
+          {/* Hold rendering until Clerk has resolved the session so there's
+              no layout shift between the two states. */}
+          {isLoaded && (
+            <>
+              {isSignedIn ? (
+                <UserButton />
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hidden sm:inline-flex"
+                    asChild
+                  >
+                    <Link href="/signin">Sign in</Link>
+                  </Button>
+                  <Button size="sm" asChild>
+                    <Link href="/signin">Get started</Link>
+                  </Button>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
     </header>
