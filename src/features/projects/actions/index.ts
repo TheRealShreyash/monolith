@@ -3,6 +3,7 @@ import { generateSlug } from "random-word-slugs";
 import { getCurrentUser } from "@/features/auth/actions";
 import { prisma } from "@/lib/db";
 import { MessageRole, MessageType } from "@/generated/prisma/enums";
+import { inngest } from "@/features/inngest/client";
 
 export const createProject = async (value: string) => {
   const user = await getCurrentUser();
@@ -28,7 +29,13 @@ export const createProject = async (value: string) => {
       },
     });
 
-    // Todo: Send project to inngest
+    await inngest.send({
+      name: "code-agent/run",
+      data: {
+        value,
+        projectId: project.id,
+      },
+    });
 
     return project;
   } catch (error) {
