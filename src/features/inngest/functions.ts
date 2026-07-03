@@ -108,7 +108,6 @@ export const codeAgentFunction = inngest.createFunction(
                     buffers.stderr += data;
                   },
                 });
-
                 return result.stdout;
               } catch (error) {
                 console.log(
@@ -128,21 +127,31 @@ export const codeAgentFunction = inngest.createFunction(
             content: z.string(),
           }),
           handler: async ({ path, content }, { step: toolStep, network }) => {
-            return await toolStep?.run("create-or-update-file", async () => {
-              try {
-                const sandbox = await Sandbox.connect(
-                  network!.state.data.sandboxId,
-                );
+            const result = await toolStep?.run(
+              "create-or-update-file",
+              async () => {
+                try {
+                  const sandbox = await Sandbox.connect(
+                    network!.state.data.sandboxId,
+                  );
 
-                await sandbox.files.write(path, content);
+                  await sandbox.files.write(path, content);
 
-                network!.state.data.files[path] = content;
+                  return { ok: true as const, path, content };
+                } catch (error) {
+                  return { ok: false as const, path, error: String(error) };
+                }
+              },
+            );
 
-                return `File ${path} created or updated`;
-              } catch (error) {
-                return `Failed to create or update file ${path}:: ${error}`;
-              }
-            });
+            if (result?.ok) {
+              network!.state.data.files[result.path] = result.content;
+              return `File ${result.path} created or updated`;
+            }
+
+            return `Failed to create or update file ${path}: ${
+              result?.ok === false ? result.error : "unknown error"
+            }`;
           },
         }),
         createTool({
@@ -224,7 +233,7 @@ export const codeAgentFunction = inngest.createFunction(
 
     const fragmentTitle = agentOutputText(fragmentTitleOutput, "Untitled");
     const responseText = agentOutputText(responseOutput, "Here you go");
-    const isError = !summary || Object.keys(files).length === 0;
+    const isError = !summary || Object.keys(files || {}).length === 0;
 
     const sandboxUrl = await step.run("get-sandbox-url", async () => {
       const sandbox = await Sandbox.connect(sandboxId);
