@@ -1,5 +1,5 @@
 export type MessageRole = "USER" | "ASSISTANT";
-export type MessageStatus = "RESULT" | "ERROR" | "TEXT";
+export type MessageStatus = "RESULT" | "ERROR";
 
 export interface Fragment {
   id: string;

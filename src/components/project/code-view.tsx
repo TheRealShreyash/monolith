@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Copy, Check, File } from "lucide-react";
+import { useState } from "react";
+import { Check, Copy, FileCode2, FolderOpen } from "lucide-react";
 import { Fragment } from "./types";
 import { cn } from "@/lib/utils";
 
@@ -14,75 +12,97 @@ interface CodeViewProps {
 export function CodeView({ fragment }: CodeViewProps) {
   const files = fragment?.files ?? {};
   const filePaths = Object.keys(files);
-  const [selected, setSelected] = useState(filePaths[0] ?? "");
+  // Manual picks win as long as they're still valid for the current
+  // fragment; otherwise fall back to the first file. Fully derived, so
+  // switching fragments never needs an effect to "resync" state.
+  const [manualSelected, setManualSelected] = useState<string | null>(null);
+  const selected =
+    manualSelected && filePaths.includes(manualSelected)
+      ? manualSelected
+      : (filePaths[0] ?? "");
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (!filePaths.includes(selected)) {
-      setSelected(filePaths[0] ?? "");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fragment]);
 
   if (!fragment || filePaths.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        No files yet.
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
+          <FolderOpen className="h-6 w-6" />
+        </span>
+        <p className="text-sm font-medium">No files yet</p>
+        <p className="max-w-xs text-sm text-muted-foreground">
+          Generated source files will show up here.
+        </p>
       </div>
     );
   }
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(files[selected] ?? "");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(files[selected] ?? "");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard unavailable (insecure context / denied) — ignore
+    }
   };
 
+  const lines = (files[selected] ?? "").split("\n");
+
   return (
-    <div className="flex h-full">
-      <div className="w-56 shrink-0 border-r border-border">
-        <ScrollArea className="h-full">
-          <div className="flex flex-col gap-0.5 p-2">
-            {filePaths.map((path) => (
-              <button
-                key={path}
-                onClick={() => setSelected(path)}
-                className={cn(
-                  "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-accent",
-                  selected === path && "bg-accent font-medium",
-                )}
-              >
-                <File className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="truncate">{path}</span>
-              </button>
-            ))}
-          </div>
-        </ScrollArea>
+    <div className="flex h-full min-h-0 flex-col md:flex-row">
+      <div className="scrollbar-thin flex shrink-0 gap-1 overflow-x-auto border-b border-border p-2 md:w-60 md:flex-col md:overflow-x-visible md:overflow-y-auto md:border-b-0 md:border-r">
+        {filePaths.map((path) => (
+          <button
+            key={path}
+            onClick={() => setManualSelected(path)}
+            className={cn(
+              "flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-left font-mono text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+              selected === path && "bg-accent text-foreground",
+            )}
+          >
+            <FileCode2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="truncate">{path}</span>
+          </button>
+        ))}
       </div>
 
-      <div className="flex flex-1 flex-col min-w-0">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between border-b border-border px-4 py-2">
-          <span className="truncate text-xs text-muted-foreground">
+          <span className="truncate font-mono text-xs text-muted-foreground">
             {selected}
           </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+          <button
+            type="button"
+            aria-label="Copy file"
             onClick={handleCopy}
+            className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             {copied ? (
-              <Check className="h-3.5 w-3.5" />
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-500" /> Copied
+              </>
             ) : (
-              <Copy className="h-3.5 w-3.5" />
+              <>
+                <Copy className="h-3.5 w-3.5" /> Copy
+              </>
             )}
-          </Button>
+          </button>
         </div>
-        <ScrollArea className="flex-1">
-          <pre className="p-4 text-xs leading-relaxed">
-            <code>{files[selected]}</code>
+        <div className="scrollbar-thin min-h-0 flex-1 overflow-auto">
+          <pre className="flex min-w-max py-4 font-mono text-xs leading-6">
+            <span
+              aria-hidden="true"
+              className="select-none px-4 text-right text-muted-foreground/50"
+            >
+              {lines.map((_, i) => (
+                <span key={i} className="block">
+                  {i + 1}
+                </span>
+              ))}
+            </span>
+            <code className="pr-6">{files[selected]}</code>
           </pre>
-        </ScrollArea>
+        </div>
       </div>
     </div>
   );
