@@ -14,7 +14,7 @@ export async function onBoardUser() {
 
   const email =
     clerkUser.primaryEmailAddress?.emailAddress ??
-    clerkUser.emailAddresses[0].emailAddress ??
+    clerkUser.emailAddresses[0]?.emailAddress ??
     null;
   const name =
     clerkUser.fullName ??
